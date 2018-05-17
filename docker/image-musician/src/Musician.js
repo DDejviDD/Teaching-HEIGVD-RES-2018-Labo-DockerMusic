@@ -20,7 +20,7 @@ SOUNDS.set('drum', 'boum-boum');
  * @param {any} key type of the musician
  */
 function Musician(key) {
-  this.key = key;
+  this.uuid = key;
   this.sound = 'none';
 }
 
@@ -45,11 +45,9 @@ function soundSender() {
  */
 function start() {
   const instrument = process.argv[2];
-  if (!(instrument in SOUNDS)) {
-    SOUNDS.forEach((element) => {
-      console.log(`${element}\n`);
-    });
+  if (!(SOUNDS.has(instrument))) {
     console.log('Fatal error. Unknown instrument !');
+    process.exit(-1);
   }
   MUSICIAN.sound = SOUNDS.get(instrument);
   setInterval(soundSender, SOUND_SENDER_INTERVAL);

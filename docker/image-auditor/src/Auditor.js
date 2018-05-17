@@ -17,18 +17,18 @@ INSTRUMENTS.set('trulu', 'flute');
 INSTRUMENTS.set('gzi-gzi', 'violin');
 INSTRUMENTS.set('boum-boum', 'drum');
 
-var musicians = new Map();
+const musicians = new Map();
 const MUSICIAN_IS_GONE = 5;
-const MESSAGE_TO_SEND = [];
+var MESSAGE_TO_SEND;
 
 /**
  * Create a Musician, as needed.
  * @param {any} uuid make the musician unique
  * @param {any} instrument the instrument the user is playing with.
  */
-function Musician(uuid, instrument) {
-  this.key = uuid;
-  this.instrument = instrument;
+function Musician() {
+  this.uuid;
+  this.instrument;
   this.lastActivity = MOMENT().format('YYYY-MM-DD HH:mm:ss');
 }
 
@@ -38,14 +38,17 @@ function Musician(uuid, instrument) {
  */
 function deleteMusicianIfHeIsNotActive(m) {
   if (MOMENT().diff(m.lastActivity, 'seconds') > MUSICIAN_IS_GONE) {
+    console.log(`Deleting ${m}`);
     musicians.delete(m);
   } else {
+    console.log(`Adding ${m}`);
     MESSAGE_TO_SEND.push(m);
   }
 }
 
 // On first connection.
 const server = NET.createServer((s) => {
+  MESSAGE_TO_SEND = [];
   musicians.forEach(deleteMusicianIfHeIsNotActive);
   s.write(`${JSON.stringify(MESSAGE_TO_SEND, null, '\t')}\n`);
   s.end();
@@ -57,8 +60,8 @@ const server = NET.createServer((s) => {
  * @returns the name of the instrument.
  */
 function getInstrument(sound) {
-  if (!(sound in INSTRUMENTS)) {
-    console.log('Error. Unknown sound !');
+  if (!(INSTRUMENTS.has(sound))) {
+    console.log(`Error. Unknown sound ${sound}`);
   }
   return INSTRUMENTS.get(sound);
 }
@@ -69,17 +72,18 @@ function getInstrument(sound) {
  * @param {any} source the author of the message
  */
 function listener(message, source) {
-  const jsonObject = JSON.parse(message);
-  const musician = new Musician();
+  var jsonObject = JSON.parse(message);
+  var musician = new Musician();
 
   musician.lastActivity = MOMENT(new Date());
-  musician.key = jsonObject.uuid;
+  musician.uuid = jsonObject.uuid;
   musician.instrument = getInstrument(jsonObject.sound);
-  
-  musicians.set(musician.key, musician);
+
+  musicians.set(musician.uuid, musician);
 
   console.log(`${source.address} ${source.port} ${message}`);
 }
+
 // bind the socket and add the membership.
 SOCKET.bind(INTERNAL_PORT, INTERNAL_HOST, () => {
   console.log(`Listening the orchestra on ${INTERNAL_HOST}`);
